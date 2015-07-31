@@ -11,7 +11,7 @@ func (s *server) serveTarget(w http.ResponseWriter, r *http.Request) {
 	parts := strings.SplitN(r.URL.Path, "/", 3)
 	if len(parts) != 3 || parts[2] == "" {
 		w.WriteHeader(http.StatusBadRequest)
-		badRequestCounter.Inc(1)
+		badRequestCounter.Inc()
 		return
 	}
 
@@ -21,7 +21,7 @@ func (s *server) serveTarget(w http.ResponseWriter, r *http.Request) {
 
 	if destination == nil {
 		w.WriteHeader(http.StatusInternalServerError)
-		internalServerErrorCounter.Inc(1)
+		internalServerErrorCounter.Inc()
 		return
 	}
 

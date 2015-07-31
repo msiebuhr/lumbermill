@@ -39,7 +39,7 @@ func (d *destination) PostPoint(point point) {
 	select {
 	case d.points <- point:
 	default:
-		droppedErrorCounter.Inc(1)
+		droppedErrorCounter.Inc()
 	}
 }
 

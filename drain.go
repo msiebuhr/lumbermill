@@ -11,7 +11,8 @@ import (
 
 	"github.com/heroku/lumbermill/Godeps/_workspace/src/github.com/bmizerany/lpx"
 	"github.com/heroku/lumbermill/Godeps/_workspace/src/github.com/kr/logfmt"
-	metrics "github.com/heroku/lumbermill/Godeps/_workspace/src/github.com/rcrowley/go-metrics"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var (
@@ -21,27 +22,134 @@ var (
 	Heroku = []byte("heroku")
 
 	// go-metrics Instruments
-	wrongMethodErrorCounter    = metrics.GetOrRegisterCounter("lumbermill.errors.drain.wrong.method", metrics.DefaultRegistry)
-	authFailureCounter         = metrics.GetOrRegisterCounter("lumbermill.errors.auth.failure", metrics.DefaultRegistry)
-	badRequestCounter          = metrics.GetOrRegisterCounter("lumbermill.errors.badrequest", metrics.DefaultRegistry)
-	internalServerErrorCounter = metrics.GetOrRegisterCounter("lumbermill.errors.internalserver", metrics.DefaultRegistry)
-	tokenMissingCounter        = metrics.GetOrRegisterCounter("lumbermill.errors.token.missing", metrics.DefaultRegistry)
-	timeParsingErrorCounter    = metrics.GetOrRegisterCounter("lumbermill.errors.time.parse", metrics.DefaultRegistry)
-	logfmtParsingErrorCounter  = metrics.GetOrRegisterCounter("lumbermill.errors.logfmt.parse", metrics.DefaultRegistry)
-	droppedErrorCounter        = metrics.GetOrRegisterCounter("lumbermill.errors.dropped", metrics.DefaultRegistry)
-	batchCounter               = metrics.GetOrRegisterCounter("lumbermill.batch", metrics.DefaultRegistry)
-	linesCounter               = metrics.GetOrRegisterCounter("lumbermill.lines", metrics.DefaultRegistry)
-	routerErrorLinesCounter    = metrics.GetOrRegisterCounter("lumbermill.lines.router.error", metrics.DefaultRegistry)
-	routerLinesCounter         = metrics.GetOrRegisterCounter("lumbermill.lines.router", metrics.DefaultRegistry)
-	routerBlankLinesCounter    = metrics.GetOrRegisterCounter("lumbermill.lines.router.blank", metrics.DefaultRegistry)
-	dynoErrorLinesCounter      = metrics.GetOrRegisterCounter("lumbermill.lines.dyno.error", metrics.DefaultRegistry)
-	dynoMemLinesCounter        = metrics.GetOrRegisterCounter("lumbermill.lines.dyno.mem", metrics.DefaultRegistry)
-	dynoLoadLinesCounter       = metrics.GetOrRegisterCounter("lumbermill.lines.dyno.load", metrics.DefaultRegistry)
-	unknownHerokuLinesCounter  = metrics.GetOrRegisterCounter("lumbermill.lines.unknown.heroku", metrics.DefaultRegistry)
-	unknownUserLinesCounter    = metrics.GetOrRegisterCounter("lumbermill.lines.unknown.user", metrics.DefaultRegistry)
-	parseTimer                 = metrics.GetOrRegisterTimer("lumbermill.batches.parse.time", metrics.DefaultRegistry)
-	batchSizeHistogram         = metrics.GetOrRegisterHistogram("lumbermill.batches.sizes", metrics.DefaultRegistry, metrics.NewUniformSample(100))
+	wrongMethodErrorCounter    = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "lumbermill",
+		Name: "errors",
+		Help: "x",
+		ConstLabels: prometheus.Labels{"error": "drain_wrong_method"},
+	})
+	authFailureCounter         = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "lumbermill",
+		Name: "errors",
+		Help: "x",
+		ConstLabels: prometheus.Labels{"error": "auth_failure"},
+	})
+	badRequestCounter          = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "lumbermill",
+		Name: "errors",
+		Help: "x",
+		ConstLabels: prometheus.Labels{"error": "badrequest"},
+	})
+	internalServerErrorCounter = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "lumbermill",
+		Name: "errors",
+		Help: "x",
+		ConstLabels: prometheus.Labels{"error": "internalserver"},
+	})
+
+	tokenMissingCounter        = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "lumbermill",
+		Name: "errors",
+		Help: "x",
+		ConstLabels: prometheus.Labels{"error": "token_missing"},
+	})
+	timeParsingErrorCounter    = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "lumbermill",
+		Name: "errors",
+		Help: "x",
+		ConstLabels: prometheus.Labels{"error": "time.parse"},
+	})
+	logfmtParsingErrorCounter  = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "lumbermill",
+		Name: "errors",
+		Help: "x",
+		ConstLabels: prometheus.Labels{"error": "logfmt.parse"},
+	})
+	droppedErrorCounter        = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "lumbermill",
+		Name: "errors",
+		Help: "x",
+		ConstLabels: prometheus.Labels{"error": "dropped"},
+	})
+
+	batchCounter               = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "lumbermill",
+		Name: "batch",
+		Help: "x",
+		//ConstLabels: prometheus.Labels{"error": "internalserver"},
+	})
+
+	linesCounter               = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "lumbermill",
+		Name: "lines",
+		Help: "x",
+	})
+	routerErrorLinesCounter    = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "lumbermill",
+		Name: "lines",
+		Help: "x",
+		ConstLabels: prometheus.Labels{"router": "error"},
+	})
+	routerLinesCounter         = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "lumbermill",
+		Name: "lines",
+		Help: "x",
+		ConstLabels: prometheus.Labels{"router": "ok"},
+	})
+	routerBlankLinesCounter    = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "lumbermill",
+		Name: "lines",
+		Help: "x",
+		ConstLabels: prometheus.Labels{"router": "blank"},
+	})
+	dynoErrorLinesCounter      = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "lumbermill",
+		Name: "lines",
+		Help: "x",
+		ConstLabels: prometheus.Labels{"dyno": "error"},
+	})
+	dynoMemLinesCounter        = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "lumbermill",
+		Name: "lines",
+		Help: "x",
+		ConstLabels: prometheus.Labels{"dyno": "mem"},
+	})
+	dynoLoadLinesCounter       = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "lumbermill",
+		Name: "lines",
+		Help: "x",
+		ConstLabels: prometheus.Labels{"dyno": "load"},
+	})
+	unknownHerokuLinesCounter  = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "lumbermill",
+		Name: "lines",
+		Help: "x",
+		ConstLabels: prometheus.Labels{"unknown": "heroku"},
+	})
+	unknownUserLinesCounter    = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: "lumbermill",
+		Name: "lines",
+		Help: "x",
+		ConstLabels: prometheus.Labels{"unknown": "user"},
+	})
+	parseTimer = prometheus.NewSummary(prometheus.SummaryOpts{
+		Namespace: "lumbermill",
+		Name: "parse_time_seconds",
+		Help: "x",
+
+	})
+	batchSizeHistogram = prometheus.NewHistogram(prometheus.HistogramOpts{
+		Namespace: "lumbermill",
+		Name: "batch_size_lines",
+		Help: "x",
+	})
 )
+
+func init() {
+	prometheus.MustRegister(wrongMethodErrorCounter)
+	prometheus.MustRegister(authFailureCounter)
+	prometheus.MustRegister(badRequestCounter)
+}
 
 // Dyno's are generally reported as "<type>.<#>"
 // Extract the <type> and return it
@@ -64,7 +172,7 @@ func (s *server) maybeUpdateRecentTokens(host, id string) {
 }
 
 func handleLogFmtParsingError(msg []byte, err error) {
-	logfmtParsingErrorCounter.Inc(1)
+	logfmtParsingErrorCounter.Inc()
 	log.Printf("logfmt unmarshal error(%q): %q\n", string(msg), err)
 }
 
@@ -77,13 +185,13 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != "POST" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		wrongMethodErrorCounter.Inc(1)
+		wrongMethodErrorCounter.Inc()
 		return
 	}
 
 	id := r.Header.Get("Logplex-Drain-Token")
 
-	batchCounter.Inc(1)
+	//batchCounter.Inc()
 
 	parseStart := time.Now()
 	lp := lpx.NewReader(bufio.NewReader(r.Body))
@@ -103,7 +211,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 
 		// If we still don't have an id, throw an error and try the next line
 		if id == "" {
-			tokenMissingCounter.Inc(1)
+			tokenMissingCounter.Inc()
 			continue
 		}
 
@@ -117,7 +225,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 			if e != nil {
 				t, e = time.Parse("2006-01-02T15:04:05+00:00", timeStr)
 				if e != nil {
-					timeParsingErrorCounter.Inc(1)
+					timeParsingErrorCounter.Inc()
 					log.Printf("Error Parsing Time(%s): %q\n", string(lp.Header().Time), e)
 					continue
 				}
@@ -132,7 +240,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 				switch {
 				// router logs with a H error code in them
 				case bytes.Contains(msg, keyCodeH):
-					routerErrorLinesCounter.Inc(1)
+					routerErrorLinesCounter.Inc()
 					re := routerError{}
 					err := logfmt.Unmarshal(msg, &re)
 					if err != nil {
@@ -144,11 +252,11 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 				// If the app is blank (not pushed) we don't care
 				// do nothing atm, increment a counter
 				case bytes.Contains(msg, keyCodeBlank), bytes.Contains(msg, keyDescBlank):
-					routerBlankLinesCounter.Inc(1)
+					routerBlankLinesCounter.Inc()
 
 				// likely a standard router log
 				default:
-					routerLinesCounter.Inc(1)
+					routerLinesCounter.Inc()
 					rm := routerMsg{}
 					err := logfmt.Unmarshal(msg, &rm)
 					if err != nil {
@@ -164,7 +272,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 				switch {
 				// Dyno error messages
 				case bytes.HasPrefix(msg, dynoErrorSentinel):
-					dynoErrorLinesCounter.Inc(1)
+					dynoErrorLinesCounter.Inc()
 					de, err := parseBytesToDynoError(msg)
 					if err != nil {
 						handleLogFmtParsingError(msg, err)
@@ -180,7 +288,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 				case bytes.Contains(msg, dynoMemMsgSentinel):
 					s.maybeUpdateRecentTokens(destination.Name, id)
 
-					dynoMemLinesCounter.Inc(1)
+					dynoMemLinesCounter.Inc()
 					dm := dynoMemMsg{}
 					err := logfmt.Unmarshal(msg, &dm)
 					if err != nil {
@@ -211,7 +319,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 				case bytes.Contains(msg, dynoLoadMsgSentinel):
 					s.maybeUpdateRecentTokens(destination.Name, id)
 
-					dynoLoadLinesCounter.Inc(1)
+					dynoLoadLinesCounter.Inc()
 					dm := dynoLoadMsg{}
 					err := logfmt.Unmarshal(msg, &dm)
 					if err != nil {
@@ -230,7 +338,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 
 				// unknown
 				default:
-					unknownHerokuLinesCounter.Inc(1)
+					unknownHerokuLinesCounter.Inc()
 					if debug {
 						log.Printf("Unknown Heroku Line - Header: PRI: %s, Time: %s, Hostname: %s, Name: %s, ProcId: %s, MsgId: %s - Body: %s",
 							header.PrivalVersion,
@@ -247,7 +355,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 
 		// non heroku lines
 		default:
-			unknownUserLinesCounter.Inc(1)
+			unknownUserLinesCounter.Inc()
 			if debug {
 				log.Printf("Unknown User Line - Header: PRI: %s, Time: %s, Hostname: %s, Name: %s, ProcId: %s, MsgId: %s - Body: %s",
 					header.PrivalVersion,
@@ -262,11 +370,11 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	linesCounter.Inc(int64(linesCounterInc))
+	linesCounter.Add(float64(linesCounterInc))
 
-	batchSizeHistogram.Update(int64(linesCounterInc))
+	batchSizeHistogram.Observe(float64(linesCounterInc))
 
-	parseTimer.UpdateSince(parseStart)
+	parseTimer.Observe(time.Since(parseStart).Seconds())
 
 	w.WriteHeader(http.StatusNoContent)
 }
