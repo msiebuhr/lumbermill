@@ -1,5 +1,6 @@
 package main
 
+/*
 import (
 	"crypto/tls"
 	"fmt"
@@ -7,7 +8,6 @@ import (
 	"testing"
 
 	lpxgen "github.com/heroku/lumbermill/Godeps/_workspace/src/github.com/apg/lpxgen"
-	metrics "github.com/heroku/lumbermill/Godeps/_workspace/src/github.com/rcrowley/go-metrics"
 )
 
 func TestLumbermillDrain(t *testing.T) {
@@ -105,3 +105,4 @@ func TestLumbermillDrain(t *testing.T) {
 
 	awaitShutdown(shutdownChan, lumbermill, waitGroup)
 }
+*/
