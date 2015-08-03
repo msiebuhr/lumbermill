@@ -266,6 +266,10 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 
 	linesCounterInc := 0
 
+	// HACK: Print out headers && query params
+	fmt.Printf("URL: %#v\n", r.URL);
+	fmt.Printf("Headers: %#v\n", r.Header);
+
 	for lp.Next() {
 		linesCounterInc++
 		header := lp.Header()
