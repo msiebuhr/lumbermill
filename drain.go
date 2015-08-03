@@ -155,7 +155,6 @@ var (
 		Help: "Milliseconds responsetime",
 	}, []string{
 		"job",
-		"id",
 		"instance",
 		"method",
 		"status",
@@ -165,7 +164,6 @@ var (
 		Help: "Number of router errors",
 	}, []string{
 		"job",
-		"id",
 		"instance",
 		"method",
 		"hcode",
@@ -175,7 +173,6 @@ var (
 		Help: "Heroku memory use",
 	}, []string{
 		"job",
-		"id",
 		"instance",
 		"type",
 	})
@@ -184,7 +181,6 @@ var (
 		Help: "Heroku memory use",
 	}, []string{
 		"job",
-		"id",
 		"instance",
 		"dir",
 	})
@@ -193,7 +189,6 @@ var (
 		Help: "Heroku memory use",
 	}, []string{
 		"job",
-		"id",
 		"instance",
 		"span",
 	})
@@ -347,7 +342,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 					}
 					destination.PostPoint(point{id, routerEvent, []interface{}{timestamp, re.Code}})
 
-					routerServiceError.WithLabelValues(app, id, rm.Dyno, rm.Method, fmt.Sprint(re.Code)).Inc()
+					routerServiceError.WithLabelValues(app, rm.Dyno, rm.Method, fmt.Sprint(re.Code)).Inc()
 
 				// If the app is blank (not pushed) we don't care
 				// do nothing atm, increment a counter
@@ -359,7 +354,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 					routerLinesCounter.Inc()
 					destination.PostPoint(point{id, routerRequest, []interface{}{timestamp, rm.Status, rm.Service}})
 
-					routerService.WithLabelValues(app, id, rm.Dyno, rm.Method, fmt.Sprint(rm.Status)).Observe(float64(rm.Service))
+					routerService.WithLabelValues(app, rm.Dyno, rm.Method, fmt.Sprint(rm.Status)).Observe(float64(rm.Service))
 				}
 
 				// Non router logs, so either dynos, runtime, etc
@@ -409,13 +404,13 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 							},
 						)
 
-						dynoRuntimeMemSize.WithLabelValues(app, id, dm.Source, "cache").Set(dm.MemoryCache)
-						dynoRuntimeMemSize.WithLabelValues(app, id, dm.Source, "rss").Set(dm.MemoryRSS)
-						dynoRuntimeMemSize.WithLabelValues(app, id, dm.Source, "swap").Set(dm.MemorySwap)
-						dynoRuntimeMemSize.WithLabelValues(app, id, dm.Source, "total").Set(dm.MemoryTotal)
+						dynoRuntimeMemSize.WithLabelValues(app, dm.Source, "cache").Set(dm.MemoryCache)
+						dynoRuntimeMemSize.WithLabelValues(app, dm.Source, "rss").Set(dm.MemoryRSS)
+						dynoRuntimeMemSize.WithLabelValues(app, dm.Source, "swap").Set(dm.MemorySwap)
+						dynoRuntimeMemSize.WithLabelValues(app, dm.Source, "total").Set(dm.MemoryTotal)
 
-						dynoRuntimeMemPages.WithLabelValues(app, id, dm.Source, "in").Set(float64(dm.MemoryPgpgin))
-						dynoRuntimeMemPages.WithLabelValues(app, id, dm.Source, "out").Set(float64(dm.MemoryPgpgout))
+						dynoRuntimeMemPages.WithLabelValues(app, dm.Source, "in").Set(float64(dm.MemoryPgpgin))
+						dynoRuntimeMemPages.WithLabelValues(app, dm.Source, "out").Set(float64(dm.MemoryPgpgout))
 					}
 
 					// Dyno log-runtime-metrics load messages
@@ -439,9 +434,9 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 							},
 						)
 
-						dynoRuntimeLoad.WithLabelValues(app, id, dm.Source, "1m").Set(dm.LoadAvg1Min)
-						dynoRuntimeLoad.WithLabelValues(app, id, dm.Source, "5m").Set(dm.LoadAvg5Min)
-						dynoRuntimeLoad.WithLabelValues(app, id, dm.Source, "15m").Set(dm.LoadAvg15Min)
+						dynoRuntimeLoad.WithLabelValues(app, dm.Source, "1m").Set(dm.LoadAvg1Min)
+						dynoRuntimeLoad.WithLabelValues(app, dm.Source, "5m").Set(dm.LoadAvg5Min)
+						dynoRuntimeLoad.WithLabelValues(app, dm.Source, "15m").Set(dm.LoadAvg15Min)
 					}
 
 				// unknown
