@@ -154,8 +154,8 @@ var (
 		Name: "heroku_router_service_ms",
 		Help: "Milliseconds responsetime",
 	}, []string{
-		"job",
-		"instance",
+		"app",
+		"dyno",
 		"method",
 		"status",
 	})
@@ -163,8 +163,8 @@ var (
 		Name: "heroku_router_error_count",
 		Help: "Number of router errors",
 	}, []string{
-		"job",
-		"instance",
+		"app",
+		"dyno",
 		"method",
 		"hcode",
 	})
@@ -172,24 +172,24 @@ var (
 		Name: "heroku_runtime_memory_mb",
 		Help: "Heroku memory use",
 	}, []string{
-		"job",
-		"instance",
+		"app",
+		"dyno",
 		"type",
 	})
 	dynoRuntimeMemPages = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heroku_runtime_memory_pages",
 		Help: "Heroku memory use",
 	}, []string{
-		"job",
-		"instance",
+		"app",
+		"dyno",
 		"dir",
 	})
 	dynoRuntimeLoad = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heroku_runtime_load",
 		Help: "Heroku memory use",
 	}, []string{
-		"job",
-		"instance",
+		"app",
+		"dyno",
 		"span",
 	})
 )
