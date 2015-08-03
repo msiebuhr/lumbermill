@@ -8,7 +8,9 @@ This is a Go app which takes Heroku Log drains and parses the router and dyno in
 ## Setup
 ### Setup Prometheus
 
-Have it fetch metrics on `/metrics`, and it'll start downloading.
+Have your prometheus-server fetch from `https://user:password@<lumbermill_app>/metrics`
+
+Set the username/password in `CRED_STORE`.
 
 ### Deploy to Heroku
 
@@ -17,10 +19,12 @@ Have it fetch metrics on `/metrics`, and it'll start downloading.
 ### Add the drain to an app
 
 ```
-heroku drains:add https://<lumbermill_app>.herokuapp.com/drain?app=<the-app-to-mill-for> --app <the-app-to-mill-for>
+heroku labs:enable log-runtime-metrics --app <the-app-to-mill-for>
+heroku drains:add https://user:password@<lumbermill_app>.herokuapp.com/drain?app=<the-app-to-mill-for> --app <the-app-to-mill-for>
 ```
 
-You'll then start getting metrics in your prometheus host!
+And it'll start dumping metrics to the endpoint above.  Again, set the
+username/password in `CRED_STORE`.
 
 ### Environment Variables
 
