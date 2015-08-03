@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	auth "github.com/heroku/lumbermill/Godeps/_workspace/src/github.com/heroku/authenticater"
+	auth "github.com/heroku/authenticater"
 )
 
 const defaultTestClientTimeout = 1 * time.Second

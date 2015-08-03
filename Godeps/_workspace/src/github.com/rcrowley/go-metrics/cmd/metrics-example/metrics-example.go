@@ -2,7 +2,7 @@ package main
 
 import (
 	"errors"
-	"github.com/heroku/lumbermill/Godeps/_workspace/src/github.com/rcrowley/go-metrics"
+	"github.com/rcrowley/go-metrics"
 	"log" // "github.com/rcrowley/go-metrics/stathat"
 	"math/rand"
 	"os"

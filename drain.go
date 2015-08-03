@@ -10,8 +10,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/heroku/lumbermill/Godeps/_workspace/src/github.com/bmizerany/lpx"
-	"github.com/heroku/lumbermill/Godeps/_workspace/src/github.com/kr/logfmt"
+	"github.com/bmizerany/lpx"
+	"github.com/kr/logfmt"
 
 	"github.com/prometheus/client_golang/prometheus"
 )

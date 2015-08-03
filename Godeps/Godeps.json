@@ -1,26 +1,59 @@
 {
 	"ImportPath": "github.com/heroku/lumbermill",
-	"GoVersion": "go1.4.2",
+	"GoVersion": "go1.5beta3",
 	"Deps": [
 		{
-			"ImportPath": "github.com/apg/lpxgen",
-			"Rev": "1084a7b6a16b40517826855f9bd77240d057fde2"
+			"ImportPath": "bitbucket.org/ww/goautoneg",
+			"Comment": "null-5",
+			"Rev": "75cd24fc2f2c2a2088577d12123ddee5f54e0675"
+		},
+		{
+			"ImportPath": "github.com/beorn7/perks/quantile",
+			"Rev": "b965b613227fddccbfffe13eae360ed3fa822f8d"
 		},
 		{
 			"ImportPath": "github.com/bmizerany/lpx",
 			"Rev": "af85cf24c1567bcb5a2e4c21597cc049eab31f55"
 		},
 		{
+			"ImportPath": "github.com/golang/protobuf/proto",
+			"Rev": "68c687dc49948540b356a6b47931c9be4fcd0245"
+		},
+		{
 			"ImportPath": "github.com/heroku/authenticater",
 			"Rev": "16ff6099109815e5523480d377232dc6021ba3cf"
 		},
 		{
-			"ImportPath": "github.com/influxdb/influxdb-go",
-			"Rev": "23dc106e2636171db26f6a9296e8a52769726b65"
-		},
-		{
 			"ImportPath": "github.com/kr/logfmt",
 			"Rev": "b84e30acd515aadc4b783ad4ff83aff3299bdfe0"
+		},
+		{
+			"ImportPath": "github.com/matttproud/golang_protobuf_extensions/pbutil",
+			"Rev": "fc2b8d3a73c4867e51861bbdd5ae3c1f0869dd6a"
+		},
+		{
+			"ImportPath": "github.com/prometheus/client_golang/model",
+			"Comment": "0.7.0-2-g3a499bf",
+			"Rev": "3a499bf7fc46bc58337ce612d0cbb29c550b8118"
+		},
+		{
+			"ImportPath": "github.com/prometheus/client_golang/prometheus",
+			"Comment": "0.7.0-2-g3a499bf",
+			"Rev": "3a499bf7fc46bc58337ce612d0cbb29c550b8118"
+		},
+		{
+			"ImportPath": "github.com/prometheus/client_golang/text",
+			"Comment": "0.7.0-2-g3a499bf",
+			"Rev": "3a499bf7fc46bc58337ce612d0cbb29c550b8118"
+		},
+		{
+			"ImportPath": "github.com/prometheus/client_model/go",
+			"Comment": "model-0.0.2-12-gfa8ad6f",
+			"Rev": "fa8ad6fec33561be4280a8f0514318c79d7f6cb6"
+		},
+		{
+			"ImportPath": "github.com/prometheus/procfs",
+			"Rev": "c91d8eefde16bd047416409eb56353ea84a186e4"
 		},
 		{
 			"ImportPath": "github.com/rcrowley/go-metrics",
