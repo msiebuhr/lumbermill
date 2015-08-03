@@ -9,6 +9,8 @@ import (
 
 	auth "github.com/heroku/lumbermill/Godeps/_workspace/src/github.com/heroku/authenticater"
 	influx "github.com/heroku/lumbermill/Godeps/_workspace/src/github.com/influxdb/influxdb-go"
+
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 var influxDbStaleTimeout = 24 * time.Minute // Would be nice to make this smaller, but it lags due to continuous queries.
@@ -58,6 +60,7 @@ func newServer(httpServer *http.Server, ath auth.Authenticater, hashRing *hashRi
 	mux.HandleFunc("/health", s.serveHealth)
 	mux.HandleFunc("/health/influxdb", auth.WrapAuth(ath, s.serveInfluxDBHealth))
 	mux.HandleFunc("/target/", auth.WrapAuth(ath, s.serveTarget))
+	mux.Handle("/metrics", prometheus.Handler())
 
 	s.http.Handler = mux
 
