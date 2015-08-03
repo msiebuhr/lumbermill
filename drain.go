@@ -259,7 +259,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 
 	id := r.Header.Get("Logplex-Drain-Token")
 
-	//batchCounter.Inc()
+	batchCounter.Inc()
 
 	parseStart := time.Now()
 	lp := lpx.NewReader(bufio.NewReader(r.Body))
