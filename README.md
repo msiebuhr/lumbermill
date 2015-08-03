@@ -17,7 +17,7 @@ Have it fetch metrics on `/metrics`, and it'll start downloading.
 ### Add the drain to an app
 
 ```
-heroku drains:add https://<lumbermill_app>.herokuapp.com/drain --app <the-app-to-mill-for>
+heroku drains:add https://<lumbermill_app>.herokuapp.com/drain?app=<the-app-to-mill-for> --app <the-app-to-mill-for>
 ```
 
 You'll then start getting metrics in your prometheus host!
