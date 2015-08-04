@@ -166,6 +166,10 @@ var (
 		"method",
 		"status",
 	})
+	httpResponseSizeBytes = prometheus.NewSummaryVec(prometheus.SummaryOpts{
+		Name: "heroku_router_response_size_bytes",
+		Help: "The HTTP response sizes in bytes.",
+	}, []string {"job", "instance", "method", "status"})
 	routerServiceError = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "heroku_router_error_count",
 		Help: "Number of router errors",
@@ -230,6 +234,7 @@ func init() {
 
 	// Actual data-capture
 	prometheus.MustRegister(routerService)
+	prometheus.MustRegister(httpResponseSizeBytes)
 	prometheus.MustRegister(routerServiceError)
 	prometheus.MustRegister(dynoRuntimeMemSize)
 	prometheus.MustRegister(dynoRuntimeMemPages)
@@ -365,6 +370,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 					destination.PostPoint(point{id, routerRequest, []interface{}{timestamp, rm.Status, rm.Service}})
 
 					routerService.WithLabelValues(app, rm.Dyno, rm.Method, fmt.Sprint(rm.Status)).Observe(float64(rm.Service))
+					httpResponseSizeBytes.WithLabelValues(app, rm.Dyno, rm.Method, fmt.Sprint(rm.Status)).Observe(float64(rm.Bytes))
 				}
 
 				// Non router logs, so either dynos, runtime, etc
