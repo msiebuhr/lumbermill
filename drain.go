@@ -417,7 +417,6 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 						dynoRuntimeMemSize.WithLabelValues(app, dm.Source, "cache").Set(dm.MemoryCache)
 						dynoRuntimeMemSize.WithLabelValues(app, dm.Source, "rss").Set(dm.MemoryRSS)
 						dynoRuntimeMemSize.WithLabelValues(app, dm.Source, "swap").Set(dm.MemorySwap)
-						dynoRuntimeMemSize.WithLabelValues(app, dm.Source, "total").Set(dm.MemoryTotal)
 
 						dynoRuntimeMemPages.WithLabelValues(app, dm.Source, "in").Set(float64(dm.MemoryPgpgin))
 						dynoRuntimeMemPages.WithLabelValues(app, dm.Source, "out").Set(float64(dm.MemoryPgpgout))
@@ -462,7 +461,6 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 					dynoRuntimeMemSize.DeleteLabelValues(app, schedName, "cache")
 					dynoRuntimeMemSize.DeleteLabelValues(app, schedName, "rss")
 					dynoRuntimeMemSize.DeleteLabelValues(app, schedName, "swap")
-					dynoRuntimeMemSize.DeleteLabelValues(app, schedName, "total")
 
 					dynoRuntimeMemPages.DeleteLabelValues(app, schedName, "in")
 					dynoRuntimeMemPages.DeleteLabelValues(app, schedName, "out")
