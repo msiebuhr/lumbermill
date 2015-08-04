@@ -108,6 +108,13 @@ var (
 		Help:        "x",
 		ConstLabels: prometheus.Labels{"router": "blank"},
 	})
+
+	dynoStatusLines = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "lumbermill",
+		Name:      "dyno_lines",
+		Help:      "Number of counted dyno status lines",
+	}, []string{"type"})
+
 	dynoErrorLinesCounter = prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace:   "lumbermill",
 		Name:        "lines_dyno",
@@ -210,6 +217,9 @@ func init() {
 	prometheus.MustRegister(linesCounter)
 	prometheus.MustRegister(routerErrorLinesCounter)
 	prometheus.MustRegister(routerLinesCounter)
+
+	prometheus.MustRegister(dynoStatusLines)
+
 	prometheus.MustRegister(dynoErrorLinesCounter)
 	prometheus.MustRegister(dynoMemLinesCounter)
 	prometheus.MustRegister(dynoLoadLinesCounter)
@@ -274,7 +284,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 	linesCounterInc := 0
 
 	// TODO: It would be nice to convert query parameters to prometheus key/value pairs
-	q := r.URL.Query();
+	q := r.URL.Query()
 	if q.Get("app") == "" {
 		// Metric for invalid batches!
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -413,7 +423,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 						dynoRuntimeMemPages.WithLabelValues(app, dm.Source, "out").Set(float64(dm.MemoryPgpgout))
 					}
 
-					// Dyno log-runtime-metrics load messages
+				// Dyno log-runtime-metrics load messages
 				case bytes.Contains(msg, dynoLoadMsgSentinel):
 					s.maybeUpdateRecentTokens(destination.Name, id)
 
@@ -438,6 +448,24 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 						dynoRuntimeLoad.WithLabelValues(app, dm.Source, "5m").Set(dm.LoadAvg5Min)
 						dynoRuntimeLoad.WithLabelValues(app, dm.Source, "15m").Set(dm.LoadAvg15Min)
 					}
+
+				// Catch schedulder shutdown
+				case bytes.Contains(msg, schedJobComplete):
+					dynoStatusLines.WithLabelValues("scheduler_shutdown").Inc()
+					schedName := string(header.Procid)
+
+					// Remove load things
+					dynoRuntimeLoad.DeleteLabelValues(app, schedName, "1m")
+					dynoRuntimeLoad.DeleteLabelValues(app, schedName, "5m")
+					dynoRuntimeLoad.DeleteLabelValues(app, schedName, "15m")
+
+					dynoRuntimeMemSize.DeleteLabelValues(app, schedName, "cache")
+					dynoRuntimeMemSize.DeleteLabelValues(app, schedName, "rss")
+					dynoRuntimeMemSize.DeleteLabelValues(app, schedName, "swap")
+					dynoRuntimeMemSize.DeleteLabelValues(app, schedName, "total")
+
+					dynoRuntimeMemPages.DeleteLabelValues(app, schedName, "in")
+					dynoRuntimeMemPages.DeleteLabelValues(app, schedName, "out")
 
 				// unknown
 				default:

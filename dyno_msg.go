@@ -21,6 +21,8 @@ var (
 	dynoMemMsgSentinel  = []byte("sample#memory_total")
 	dynoLoadMsgSentinel = []byte("sample#load_avg_1m")
 	dynoErrorSentinel   = []byte("Error R")
+
+	schedJobComplete = []byte("State changed from up to complete")
 )
 
 type dynoError struct {
