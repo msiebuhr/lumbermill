@@ -8,7 +8,10 @@ This is a Go app which takes Heroku Log drains and parses the router and dyno in
 ## Setup
 ### Setup Prometheus
 
-Have your prometheus-server fetch from `https://user:password@<lumbermill_app>/metrics`
+Have your prometheus-server fetch from
+`https://user:password@<lumbermill_app>/metrics`. Be sure to add the option
+`honor_labels: true` in the config-section, otherwise prometheus will attribute
+all data coming through lumbermill as coming *from* lumbermill.
 
 Set the username/password in `CRED_STORE`.
 
