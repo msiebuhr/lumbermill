@@ -206,6 +206,10 @@ var (
 		"instance",
 		"span",
 	})
+	loadAvg1 = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "node_load1",
+		Help: "1m load avgerage.",
+	}, []string{"job", "instance"})
 )
 
 func init() {
@@ -244,6 +248,7 @@ func init() {
 	prometheus.MustRegister(dynoRuntimeMemSize)
 	prometheus.MustRegister(dynoRuntimeMemPages)
 	prometheus.MustRegister(dynoRuntimeLoad)
+	prometheus.MustRegister(loadAvg1)
 }
 
 // Dyno's are generally reported as "<type>.<#>"
@@ -457,6 +462,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 						)
 
 						dynoRuntimeLoad.WithLabelValues(app, dm.Source, "1m").Set(dm.LoadAvg1Min)
+						loadAvg1.WithLabelValues(app, dm.Source).Set(dm.LoadAvg1Min)
 						dynoRuntimeLoad.WithLabelValues(app, dm.Source, "5m").Set(dm.LoadAvg5Min)
 						dynoRuntimeLoad.WithLabelValues(app, dm.Source, "15m").Set(dm.LoadAvg15Min)
 					}
@@ -468,6 +474,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 
 					// Remove load things
 					dynoRuntimeLoad.DeleteLabelValues(app, schedName, "1m")
+					loadAvg1.DeleteLabelValues(app, schedName)
 					dynoRuntimeLoad.DeleteLabelValues(app, schedName, "5m")
 					dynoRuntimeLoad.DeleteLabelValues(app, schedName, "15m")
 
