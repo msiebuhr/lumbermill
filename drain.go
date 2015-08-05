@@ -160,11 +160,11 @@ var (
 	httpRequestDurationMicroseconds = prometheus.NewSummaryVec(prometheus.SummaryOpts{
 		Name: "http_request_duration_microseconds",
 		Help: "The HTTP request latencies in microseconds.",
-	}, []string{ "job", "instance", "handler", "status"})
+	}, []string{"job", "instance", "handler", "status"})
 	httpRequestConnectMicroseconds = prometheus.NewSummaryVec(prometheus.SummaryOpts{
 		Name: "http_request_connect_microseconds",
 		Help: "The HTTP connect latencies in microseconds.",
-	}, []string{ "job", "instance"})
+	}, []string{"job", "instance"})
 	httpRequestsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "http_requests_total",
 		Help: "Total number of HTTP requests made.",
@@ -172,7 +172,7 @@ var (
 	httpResponseSizeBytes = prometheus.NewSummaryVec(prometheus.SummaryOpts{
 		Name: "http_response_size_bytes",
 		Help: "The HTTP response sizes in bytes.",
-	}, []string {"job", "instance", "handler", "status"})
+	}, []string{"job", "instance", "handler", "status"})
 	routerServiceError = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "heroku_router_error_count",
 		Help: "Number of router errors",
