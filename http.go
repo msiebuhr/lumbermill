@@ -48,7 +48,7 @@ func newServer(httpServer *http.Server, ath auth.Authenticater, hashRing *hashRi
 
 	mux.HandleFunc("/health", s.serveHealth)
 	mux.HandleFunc("/target/", auth.WrapAuth(ath, s.serveTarget))
-	mux.Handle("/metrics", prometheus.Handler())
+	mux.Handle("/metrics", prometheus.UninstrumentedHandler())
 
 	s.http.Handler = mux
 

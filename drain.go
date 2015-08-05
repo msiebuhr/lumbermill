@@ -157,19 +157,22 @@ var (
 	})
 
 	// Capture actual data
-	routerService = prometheus.NewSummaryVec(prometheus.SummaryOpts{
-		Name: "heroku_router_service_ms",
-		Help: "Milliseconds responsetime",
-	}, []string{
-		"job",
-		"instance",
-		"method",
-		"status",
-	})
+	httpRequestDurationMicroseconds = prometheus.NewSummaryVec(prometheus.SummaryOpts{
+		Name: "http_request_duration_microseconds",
+		Help: "The HTTP request latencies in microseconds.",
+	}, []string{ "job", "instance", "handler", "status"})
+	httpRequestConnectMicroseconds = prometheus.NewSummaryVec(prometheus.SummaryOpts{
+		Name: "http_request_connect_microseconds",
+		Help: "The HTTP connect latencies in microseconds.",
+	}, []string{ "job", "instance"})
+	httpRequestsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "http_requests_total",
+		Help: "Total number of HTTP requests made.",
+	}, []string{"job", "instance", "handler", "method", "code"})
 	httpResponseSizeBytes = prometheus.NewSummaryVec(prometheus.SummaryOpts{
-		Name: "heroku_router_response_size_bytes",
+		Name: "http_response_size_bytes",
 		Help: "The HTTP response sizes in bytes.",
-	}, []string {"job", "instance", "method", "status"})
+	}, []string {"job", "instance", "handler", "status"})
 	routerServiceError = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "heroku_router_error_count",
 		Help: "Number of router errors",
@@ -233,7 +236,9 @@ func init() {
 	prometheus.MustRegister(batchSizeHistogram)
 
 	// Actual data-capture
-	prometheus.MustRegister(routerService)
+	prometheus.MustRegister(httpRequestDurationMicroseconds)
+	prometheus.MustRegister(httpRequestConnectMicroseconds)
+	prometheus.MustRegister(httpRequestsTotal)
 	prometheus.MustRegister(httpResponseSizeBytes)
 	prometheus.MustRegister(routerServiceError)
 	prometheus.MustRegister(dynoRuntimeMemSize)
@@ -369,7 +374,9 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 					routerLinesCounter.Inc()
 					destination.PostPoint(point{id, routerRequest, []interface{}{timestamp, rm.Status, rm.Service}})
 
-					routerService.WithLabelValues(app, rm.Dyno, rm.Method, fmt.Sprint(rm.Status)).Observe(float64(rm.Service))
+					httpRequestDurationMicroseconds.WithLabelValues(app, rm.Dyno, rm.Method, fmt.Sprint(rm.Status)).Observe(float64(rm.Service * 1000))
+					httpRequestConnectMicroseconds.WithLabelValues(app, rm.Dyno).Observe(float64(rm.Connect * 1000))
+					httpRequestsTotal.WithLabelValues(app, rm.Dyno, rm.Method, rm.Method, fmt.Sprint(rm.Status)).Inc()
 					httpResponseSizeBytes.WithLabelValues(app, rm.Dyno, rm.Method, fmt.Sprint(rm.Status)).Observe(float64(rm.Bytes))
 				}
 
