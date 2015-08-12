@@ -182,7 +182,7 @@ var (
 	}, []string{
 		"job",
 		"instance",
-		"method",
+		"route",
 		"hcode",
 	})
 	dynoServiceError = prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -404,6 +404,15 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 					continue
 				}
 
+				// Try decoding the path to a known route
+				handler, _ := routes.Lookup(rm.Path)
+
+				if handler != "" {
+					handler = rm.Method + " " + handler
+				} else {
+					handler = rm.Method + " ?"
+				}
+
 				switch {
 				// router logs with a H error code in them
 				case bytes.Contains(msg, keyCodeH):
@@ -416,7 +425,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 					}
 					destination.PostPoint(point{id, routerEvent, []interface{}{timestamp, re.Code}})
 
-					routerServiceError.WithLabelValues(app, rm.Dyno, rm.Method, fmt.Sprint(re.Code)).Inc()
+					routerServiceError.WithLabelValues(app, rm.Dyno, handler, fmt.Sprint(re.Code)).Inc()
 
 				// If the app is blank (not pushed) we don't care
 				// do nothing atm, increment a counter
@@ -427,13 +436,6 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 				default:
 					routerLinesCounter.Inc()
 					destination.PostPoint(point{id, routerRequest, []interface{}{timestamp, rm.Status, rm.Service}})
-					handler, _ := routes.Lookup(rm.Path)
-
-					if handler != "" {
-						handler = rm.Method + " " + handler
-					} else {
-						handler = rm.Method + " ?"
-					}
 
 					httpRequestDurationMicroseconds.WithLabelValues(app, rm.Dyno, handler, fmt.Sprint(rm.Status)).Observe(float64(rm.Service * 1000))
 					httpRequestsTotal.WithLabelValues(app, rm.Dyno, handler, fmt.Sprint(rm.Status)).Inc()
