@@ -182,6 +182,14 @@ var (
 		"method",
 		"hcode",
 	})
+	dynoServiceError = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "heroku_dyno_error_count",
+		Help: "Number of dyno errors",
+	}, []string{
+		"job",
+		"instance",
+		"rcode",
+	})
 	dynoRuntimeMemSize = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heroku_runtime_memory_mb",
 		Help: "Heroku memory use",
@@ -401,6 +409,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 					destination.PostPoint(
 						point{id, dynoEvents, []interface{}{timestamp, what, "R", de.Code, string(msg), dynoType(what)}},
 					)
+					dynoServiceError.WithLabelValues(app, string(lp.Header().Procid), fmt.Sprint(de.Code)).Inc()
 
 				// Dyno log-runtime-metrics memory messages
 				case bytes.Contains(msg, dynoMemMsgSentinel):
