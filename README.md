@@ -1,9 +1,8 @@
-[![Travis](https://img.shields.io/travis/heroku/lumbermill.svg)](https://travis-ci.org/heroku/lumbermill)
-[![GoDoc](https://godoc.org/github.com/heroku/lumbermill?status.svg)](http://godoc.org/github.com/heroku/lumbermill)
+[![GoDoc](https://godoc.org/github.com/msiebuhr/lumbermill-prometheus?status.svg)](http://godoc.org/github.com/msiebuhr/lumbermill-prometheus)
 
-# Lumbermill
+# Lumbermill-prometheus
 
-This is a Go app which takes Heroku Log drains and parses the router and dyno information, and then pushes metrics to influxdb.
+This is a Go app which takes Heroku Log drains and parses the router and dyno information, and then serves metrics to Prometheus.
 
 ## Setup
 ### Setup Prometheus
