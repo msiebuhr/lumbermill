@@ -1,1 +1,1 @@
-web: lumbermill
+web: lumbermill-prometheus
