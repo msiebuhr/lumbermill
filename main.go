@@ -7,15 +7,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
 
-	auth "github.com/heroku/lumbermill/Godeps/_workspace/src/github.com/heroku/authenticater"
-	influx "github.com/heroku/lumbermill/Godeps/_workspace/src/github.com/influxdb/influxdb-go"
-	metrics "github.com/heroku/lumbermill/Godeps/_workspace/src/github.com/rcrowley/go-metrics"
-	librato "github.com/heroku/lumbermill/Godeps/_workspace/src/github.com/rcrowley/go-metrics/librato"
+	auth "github.com/heroku/authenticater"
+	metrics "github.com/rcrowley/go-metrics"
+	librato "github.com/rcrowley/go-metrics/librato"
 )
 
 type shutdownChan chan struct{}
@@ -39,60 +37,18 @@ func (s shutdownChan) Close() error {
 	return nil
 }
 
-func createInfluxDBClient(host string, f clientFunc) influx.ClientConfig {
-	return influx.ClientConfig{
-		Host:       host,                       //"influxor.ssl.edward.herokudev.com:8086",
-		Username:   os.Getenv("INFLUXDB_USER"), //"test",
-		Password:   os.Getenv("INFLUXDB_PWD"),  //"tester",
-		Database:   os.Getenv("INFLUXDB_NAME"), //"ingress",
-		IsSecure:   true,
-		HttpClient: f(),
-	}
-}
-
-// Creates clients which deliver to InfluxDB
-func createClients(hostlist string, f clientFunc) []influx.ClientConfig {
-	var clients []influx.ClientConfig
-
-	for _, host := range strings.Split(hostlist, ",") {
-		host = strings.Trim(host, "\t ")
-		if host != "" {
-			clients = append(clients, createInfluxDBClient(host, f))
-		}
-	}
-	return clients
-}
-
 // Creates destinations and attaches them to posters, which deliver to InfluxDB
 func createMessageRoutes(hostlist string, f clientFunc) (*hashRing, []*destination, *sync.WaitGroup) {
 	var destinations []*destination
 	posterGroup := new(sync.WaitGroup)
 	hashRing := newHashRing(hashRingReplication, nil)
 
-	influxClients := createClients(hostlist, f)
-	if len(influxClients) == 0 {
-		//No backends, so blackhole things
-		destination := newDestination("null", pointChannelCapacity)
-		hashRing.Add(destination)
-		destinations = append(destinations, destination)
-		poster := newNullPoster(destination)
-		go poster.Run()
-	} else {
-		for _, client := range influxClients {
-			name := client.Host
-			destination := newDestination(name, pointChannelCapacity)
-			hashRing.Add(destination)
-			destinations = append(destinations, destination)
-			for p := 0; p < postersPerHost; p++ {
-				poster := newPoster(client, name, destination, posterGroup)
-				posterGroup.Add(1)
-				go func() {
-					poster.Run()
-					posterGroup.Done()
-				}()
-			}
-		}
-	}
+	//No backends, so blackhole things
+	destination := newDestination("null", pointChannelCapacity)
+	hashRing.Add(destination)
+	destinations = append(destinations, destination)
+	poster := newNullPoster(destination)
+	go poster.Run()
 
 	return hashRing, destinations, posterGroup
 }

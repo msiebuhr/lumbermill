@@ -3,7 +3,7 @@ package main
 import (
 	"net/http"
 
-	"github.com/heroku/lumbermill/Godeps/_workspace/src/github.com/heroku/authenticater"
+	"github.com/heroku/authenticater"
 )
 
 func main() {

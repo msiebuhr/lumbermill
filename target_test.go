@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	auth "github.com/heroku/lumbermill/Godeps/_workspace/src/github.com/heroku/authenticater"
+	auth "github.com/heroku/authenticater"
 )
 
 func TestTargetWithMultipleAuth(t *testing.T) {
