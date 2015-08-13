@@ -6,13 +6,16 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/bmizerany/lpx"
 	"github.com/kr/logfmt"
 
+	"github.com/msiebuhr/routefinder"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -168,7 +171,7 @@ var (
 	httpRequestsTotal = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: "http_requests_total",
 		Help: "Total number of HTTP requests made.",
-	}, []string{"job", "instance", "handler", "method", "code"})
+	}, []string{"job", "instance", "handler", "code"})
 	httpResponseSizeBytes = prometheus.NewSummaryVec(prometheus.SummaryOpts{
 		Name: "http_response_size_bytes",
 		Help: "The HTTP response sizes in bytes.",
@@ -179,8 +182,16 @@ var (
 	}, []string{
 		"job",
 		"instance",
-		"method",
+		"route",
 		"hcode",
+	})
+	dynoServiceError = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "heroku_dyno_error_count",
+		Help: "Number of dyno errors",
+	}, []string{
+		"job",
+		"instance",
+		"rcode",
 	})
 	dynoRuntimeMemSize = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "heroku_runtime_memory_mb",
@@ -210,6 +221,10 @@ var (
 		Name: "node_load1",
 		Help: "1m load avgerage.",
 	}, []string{"job", "instance"})
+
+	// Route lookups
+	routesLock sync.Mutex
+	routes     map[string]*routefinder.Routefinder
 )
 
 func init() {
@@ -249,6 +264,38 @@ func init() {
 	prometheus.MustRegister(dynoRuntimeMemPages)
 	prometheus.MustRegister(dynoRuntimeLoad)
 	prometheus.MustRegister(loadAvg1)
+
+	routes = make(map[string]*routefinder.Routefinder)
+}
+
+func getRoutes(appName string) *routefinder.Routefinder {
+	plainName := strings.ToLower(appName)
+	routesLock.Lock()
+	defer routesLock.Unlock()
+
+	// Is it already there?
+	if finder, ok := routes[plainName]; ok {
+		return finder
+	}
+
+	// Add it
+	routes[plainName] = &routefinder.Routefinder{}
+
+	// Is it in the env?
+	names := []string{
+		"routes_" + appName,                    // routes_appName
+		"routes_" + plainName,                  // routes_appName
+		"ROUTES_" + strings.ToUpper(plainName), // routes_appName
+	}
+
+	for _, name := range names {
+		env := os.Getenv(name)
+		if env != "" {
+			routes[plainName].Set(env)
+		}
+	}
+
+	return routes[plainName]
 }
 
 // Dyno's are generally reported as "<type>.<#>"
@@ -306,8 +353,10 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 		noAppNameQuery.Inc()
 		return
 	}
-
 	app := q.Get("app")
+
+	// Get any routes for this app
+	routes := getRoutes(app)
 
 	for lp.Next() {
 		linesCounterInc++
@@ -355,6 +404,15 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 					continue
 				}
 
+				// Try decoding the path to a known route
+				handler, _ := routes.Lookup(rm.Path)
+
+				if handler != "" {
+					handler = rm.Method + " " + handler
+				} else {
+					handler = rm.Method + " ?"
+				}
+
 				switch {
 				// router logs with a H error code in them
 				case bytes.Contains(msg, keyCodeH):
@@ -367,7 +425,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 					}
 					destination.PostPoint(point{id, routerEvent, []interface{}{timestamp, re.Code}})
 
-					routerServiceError.WithLabelValues(app, rm.Dyno, rm.Method, fmt.Sprint(re.Code)).Inc()
+					routerServiceError.WithLabelValues(app, rm.Dyno, handler, fmt.Sprint(re.Code)).Inc()
 
 				// If the app is blank (not pushed) we don't care
 				// do nothing atm, increment a counter
@@ -379,10 +437,12 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 					routerLinesCounter.Inc()
 					destination.PostPoint(point{id, routerRequest, []interface{}{timestamp, rm.Status, rm.Service}})
 
-					httpRequestDurationMicroseconds.WithLabelValues(app, rm.Dyno, rm.Method, fmt.Sprint(rm.Status)).Observe(float64(rm.Service * 1000))
+					httpRequestDurationMicroseconds.WithLabelValues(app, rm.Dyno, handler, fmt.Sprint(rm.Status)).Observe(float64(rm.Service * 1000))
+					httpRequestsTotal.WithLabelValues(app, rm.Dyno, handler, fmt.Sprint(rm.Status)).Inc()
+					httpResponseSizeBytes.WithLabelValues(app, rm.Dyno, handler, fmt.Sprint(rm.Status)).Observe(float64(rm.Bytes))
+
+					// This is measured before any of our code is hit, so no point in adding different code-paths as dimensions
 					httpRequestConnectMicroseconds.WithLabelValues(app, rm.Dyno).Observe(float64(rm.Connect * 1000))
-					httpRequestsTotal.WithLabelValues(app, rm.Dyno, rm.Method, rm.Method, fmt.Sprint(rm.Status)).Inc()
-					httpResponseSizeBytes.WithLabelValues(app, rm.Dyno, rm.Method, fmt.Sprint(rm.Status)).Observe(float64(rm.Bytes))
 				}
 
 				// Non router logs, so either dynos, runtime, etc
@@ -401,6 +461,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 					destination.PostPoint(
 						point{id, dynoEvents, []interface{}{timestamp, what, "R", de.Code, string(msg), dynoType(what)}},
 					)
+					dynoServiceError.WithLabelValues(app, string(lp.Header().Procid), fmt.Sprint(de.Code)).Inc()
 
 				// Dyno log-runtime-metrics memory messages
 				case bytes.Contains(msg, dynoMemMsgSentinel):
