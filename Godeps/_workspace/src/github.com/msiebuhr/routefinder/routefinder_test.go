@@ -14,7 +14,7 @@ func Example() {
 }
 
 func TestBasic(t *testing.T) {
-	r, err := NewRoutefinder("/foo/:id/a", "/foo/:id/b", "/foo/:id", "/foo")
+	r, err := NewRoutefinder("/foo/:id/...", "/foo/:id", "/foo", "/bar/...")
 
 	if err != nil {
 		t.Fatal("Unexpected error creating routes", err)
@@ -45,6 +45,24 @@ func TestBasic(t *testing.T) {
 			t:  "",
 			kv: map[string]string{},
 		},
+		{
+			p:  "/bar/baz",
+			t:  "/bar/baz",
+			kv: map[string]string{},
+		},
+		{
+			p:  "/bar/",
+			t:  "/bar/",
+			kv: map[string]string{},
+		},
+		/* Would love to get this case in, but it does look to cause some
+		        * corner-cases that I'm too tired to reason about for now...
+		        {
+					p:  "/bar",
+					t:  "/bar",
+					kv: map[string]string{},
+				},
+		*/
 	}
 
 	for _, tt := range tests {
@@ -52,12 +70,18 @@ func TestBasic(t *testing.T) {
 		templ, meta := r.Lookup(tt.p)
 
 		if templ != tt.t {
-			t.Errorf("Expected to get route %s, got %s", tt.t, templ)
+			t.Errorf("Expected to get route `%s`, got `%s`", tt.t, templ)
 		}
 
 		for key, value := range tt.kv {
 			if data, ok := meta[key]; !ok || data != value {
-				t.Errorf("Expected to get %+v, got %+v", tt.kv, meta)
+				t.Errorf("Expected to get `%+v`, got `%+v`", tt.kv, meta)
+			}
+		}
+
+		for key, value := range meta {
+			if data, ok := tt.kv[key]; !ok || data != value {
+				t.Errorf("Unexpected `%+v`, should have `%+v`", meta, tt.kv)
 			}
 		}
 	}
@@ -84,8 +108,14 @@ func TestStringer(t *testing.T) {
 func TestSet(t *testing.T) {
 	r, _ := NewRoutefinder()
 
-	r.Set("/a,/a/:id")
+	// Adding empty things shouldn't change a thing
+	r.Set("")
+	r.Set("")
+	if r.String() != "" {
+		t.Errorf("Expected ``, got `%s`", r.String())
+	}
 
+	r.Set("/a,/a/:id")
 	if r.String() != "/a,/a/:id" {
 		t.Errorf("Expected `/a,/a/:id`, got `%s`", r.String())
 	}
@@ -96,13 +126,12 @@ func TestSet(t *testing.T) {
 	}
 
 	r.Set("/foo/:bar")
-
 	if r.String() != "/a,/a/:id,/foo/:bar" {
 		t.Errorf("Expected `/a,/a/:id,/foo/:bar`, got `%s`", r.String())
 	}
 }
 
-func ExampleLookup_Set() {
+func ExampleRoutefinder_Set() {
 	// Create a Routefinder and set it up as a Var-flag
 	var routes Routefinder
 	flag.Var(&routes, "routes", "comma-separated list of intervals")

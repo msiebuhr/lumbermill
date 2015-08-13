@@ -33,7 +33,7 @@
 		},
 		{
 			"ImportPath": "github.com/msiebuhr/routefinder",
-			"Rev": "3e7dfbafccc8f99e82806d77f795b28e14bca844"
+			"Rev": "cd098758d92fca4c45e6155a7060259f8867a582"
 		},
 		{
 			"ImportPath": "github.com/prometheus/client_golang/model",
