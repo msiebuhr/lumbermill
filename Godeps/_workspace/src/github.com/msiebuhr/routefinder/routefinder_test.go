@@ -7,14 +7,51 @@ import (
 )
 
 func Example() {
-	r, _ := NewRoutefinder("/shop/:item", "/shop/:item/rate", "/shop/:item/buy")
+	r, _ := NewRoutefinder(
+		// Plain, static paths.
+		"/",
+		"/welcome",
 
-	fmt.Println(r.Lookup("/shop/gopher/rate"))
-	// Output: /shop/:item/rate map[item:gopher]
+		// Parse out a variable from the name.
+		"/pay/:cardName",
+
+		// Match all paths under /shop/:item/ and include the path as if the
+		// rule for it was written out here.
+		"/shop/:item/...",
+
+		// The above rule doesn't catch `/shop/:item` (without the slash), so
+		// we need to add that manually for now...
+		"/shop/:item/...",
+
+		// Match everything under /static, but ignore the trailing path.
+		"/static/???",
+	)
+
+	// Plain path
+	paths := []string{
+		"/",
+		"/returns-nothing",
+		"/pay/visa",
+		"/shop/gopher",
+		"/shop/gopher/thumbnail",
+		"/static/141029384.css",
+	}
+
+	for _, url := range paths {
+		path, meta := r.Lookup(url)
+		fmt.Printf("%s -> %s %+v\n", url, path, meta)
+	}
+
+	// / -> / map[]
+	// /returns-nothing ->  map[]
+	// /pay/visa -> /pay/:cardName map[cardName:visa]
+	// /shop/gopher -> /shop/:item map[]
+	// /shop/gopher/thumbnail -> /shop/:item/thumbnail map[item:gopher]
+	// /static/141029384.css -> /static/??? map[]
 }
 
 func TestBasic(t *testing.T) {
-	r, err := NewRoutefinder("/foo/:id/...", "/foo/:id", "/foo", "/bar/...")
+	r, err := NewRoutefinder("/foo/:id/...", "/foo/:id", "/foo", "/bar/...", "/discard-trail/:foo/???")
 
 	if err != nil {
 		t.Fatal("Unexpected error creating routes", err)
@@ -56,21 +93,43 @@ func TestBasic(t *testing.T) {
 			kv: map[string]string{},
 		},
 		/* Would love to get this case in, but it does look to cause some
-		        * corner-cases that I'm too tired to reason about for now...
+		 * corner-cases that I'm too tired to reason about for now...
 		        {
 					p:  "/bar",
 					t:  "/bar",
 					kv: map[string]string{},
 				},
 		*/
+
+		{
+			p:  "/foo?abc=def",
+			t:  "/foo",
+			kv: map[string]string{},
+		},
+
+		// Discard ???-paths
+		{
+			p:  "/discard-trail/123",
+			t:  "/discard-trail/:foo/???",
+			kv: map[string]string{"foo": "123"},
+		},
+		{
+			p:  "/discard-trail/123/",
+			t:  "/discard-trail/:foo/???",
+			kv: map[string]string{"foo": "123"},
+		},
+		{
+			p:  "/discard-trail/123/a/b/c",
+			t:  "/discard-trail/:foo/???",
+			kv: map[string]string{"foo": "123"},
+		},
 	}
 
 	for _, tt := range tests {
-
 		templ, meta := r.Lookup(tt.p)
 
 		if templ != tt.t {
-			t.Errorf("Expected to get route `%s`, got `%s`", tt.t, templ)
+			t.Errorf("Expected to get route `%s` from `%s`, got `%s`", tt.t, tt.p, templ)
 		}
 
 		for key, value := range tt.kv {

@@ -61,6 +61,10 @@ func (r *Routefinder) Add(template string) error {
 		withQuotedMeta = withQuotedMeta[:len(withQuotedMeta)-7] + "\\/(?P<__TRAILING__>.*)"
 	}
 
+	if strings.HasSuffix(withQuotedMeta, "/\\?\\?\\?") {
+		withQuotedMeta = withQuotedMeta[:len(withQuotedMeta)-7] + "\\/?(?P<__DISCARD__>.*)"
+	}
+
 	// Add start and end guards
 	withQuotedMeta = fmt.Sprintf("^%s$", withQuotedMeta)
 
@@ -92,7 +96,7 @@ func (r *Routefinder) Add(template string) error {
 // variables. Lookup returns empty values, if no match is found.
 func (r Routefinder) Lookup(path string) (string, map[string]string) {
 	// Dump any query string
-	normalizedPath := strings.SplitN(path, "?", 1)[0]
+	normalizedPath := strings.SplitN(path, "?", 2)[0]
 
 	// Check key against regex'es
 	for _, template := range r {
@@ -126,6 +130,10 @@ func (r Routefinder) Lookup(path string) (string, map[string]string) {
 		if trailing, ok := meta["__TRAILING__"]; ok && strings.HasSuffix(template.name, "/...") {
 			templateName = templateName[:len(templateName)-3] + trailing
 			delete(meta, "__TRAILING__")
+		}
+
+		if _, ok := meta["__DISCARD__"]; ok && strings.HasSuffix(template.name, "/???") {
+			delete(meta, "__DISCARD__")
 		}
 
 		return templateName, meta
