@@ -7,13 +7,10 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 	"time"
 
 	auth "github.com/heroku/authenticater"
-	metrics "github.com/rcrowley/go-metrics"
-	librato "github.com/rcrowley/go-metrics/librato"
 )
 
 type shutdownChan chan struct{}
@@ -23,7 +20,6 @@ type clientFunc func() *http.Client
 const (
 	defaultClientTimeout = 20 * time.Second
 	pointChannelCapacity = 500000
-	hashRingReplication  = 46
 	postersPerHost       = 6
 )
 
@@ -37,22 +33,6 @@ func (s shutdownChan) Close() error {
 	return nil
 }
 
-// Creates destinations and attaches them to posters, which deliver to InfluxDB
-func createMessageRoutes(hostlist string, f clientFunc) (*hashRing, []*destination, *sync.WaitGroup) {
-	var destinations []*destination
-	posterGroup := new(sync.WaitGroup)
-	hashRing := newHashRing(hashRingReplication, nil)
-
-	//No backends, so blackhole things
-	destination := newDestination("null", pointChannelCapacity)
-	hashRing.Add(destination)
-	destinations = append(destinations, destination)
-	poster := newNullPoster(destination)
-	go poster.Run()
-
-	return hashRing, destinations, posterGroup
-}
-
 func awaitSignals(ss ...io.Closer) {
 	sigCh := make(chan os.Signal)
 	signal.Notify(sigCh, syscall.SIGTERM, syscall.SIGINT)
@@ -63,11 +43,10 @@ func awaitSignals(ss ...io.Closer) {
 	}
 }
 
-func awaitShutdown(shutdownChan shutdownChan, server *server, posterGroup *sync.WaitGroup) {
+func awaitShutdown(shutdownChan shutdownChan, server *server) {
 	<-shutdownChan
 	log.Printf("waiting for inflight requests to finish.")
 	server.Wait()
-	posterGroup.Wait()
 	log.Printf("Shutdown complete.")
 }
 
@@ -81,29 +60,13 @@ func newClientFunc() *http.Client {
 }
 
 func main() {
-	hashRing, destinations, posterGroup := createMessageRoutes(os.Getenv("INFLUXDB_HOSTS"), newClientFunc)
-
-	if os.Getenv("LIBRATO_TOKEN") != "" {
-		go librato.Librato(
-			metrics.DefaultRegistry,
-			20*time.Second,
-			os.Getenv("LIBRATO_OWNER"),
-			os.Getenv("LIBRATO_TOKEN"),
-			os.Getenv("LIBRATO_SOURCE"),
-			[]float64{0.50, 0.95, 0.99},
-			time.Millisecond,
-		)
-	} else if os.Getenv("DEBUG") == "true" {
-		go metrics.Log(metrics.DefaultRegistry, 20e9, log.New(os.Stderr, "metrics: ", log.Lmicroseconds))
-	}
-
 	basicAuther, err := auth.NewBasicAuthFromString(os.Getenv("CRED_STORE"))
 	if err != nil {
 		log.Fatalf("Unable to parse credentials from CRED_STORE=%q: err=%q", os.Getenv("CRED_STORE"), err)
 	}
 
 	shutdownChan := make(shutdownChan)
-	server := newServer(&http.Server{Addr: ":" + os.Getenv("PORT")}, basicAuther, hashRing)
+	server := newServer(&http.Server{Addr: ":" + os.Getenv("PORT")}, basicAuther)
 
 	log.Printf("Starting up")
 	go server.Run(5 * time.Minute)
@@ -111,10 +74,7 @@ func main() {
 	var closers []io.Closer
 	closers = append(closers, server)
 	closers = append(closers, shutdownChan)
-	for _, cls := range destinations {
-		closers = append(closers, cls)
-	}
 
 	go awaitSignals(closers...)
-	awaitShutdown(shutdownChan, server, posterGroup)
+	awaitShutdown(shutdownChan, server)
 }

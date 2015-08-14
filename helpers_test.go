@@ -7,7 +7,6 @@ import (
 	"net/http/httptest"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	auth "github.com/heroku/authenticater"
@@ -56,11 +55,10 @@ func setupInfluxDBTestServer(handler http.Handler) *httptest.Server {
 	return httptest.NewTLSServer(handler)
 }
 
-func setupLumbermillTestServer(influxHosts, creds string) (*server, *httptest.Server, []*destination, *sync.WaitGroup) {
-	hashRing, destinations, waitGroup := createMessageRoutes(influxHosts, newTestClientFunc)
+func setupLumbermillTestServer(influxHosts, creds string) (*server, *httptest.Server) {
 	testServer := httptest.NewServer(nil)
-	lumbermill := newServer(testServer.Config, auth.AnyOrNoAuth{}, hashRing)
-	return lumbermill, testServer, destinations, waitGroup
+	lumbermill := newServer(testServer.Config, auth.AnyOrNoAuth{})
+	return lumbermill, testServer
 }
 
 func splitURL(url string) (string, int) {

@@ -14,19 +14,17 @@ import (
 type server struct {
 	sync.WaitGroup
 	connectionCloser chan struct{}
-	hashRing         *hashRing
 	http             *http.Server
 	shutdownChan     shutdownChan
 	isShuttingDown   bool
 	credStore        map[string]string
 }
 
-func newServer(httpServer *http.Server, ath auth.Authenticater, hashRing *hashRing) *server {
+func newServer(httpServer *http.Server, ath auth.Authenticater) *server {
 	s := &server{
 		connectionCloser: make(chan struct{}),
 		shutdownChan:     make(chan struct{}),
 		http:             httpServer,
-		hashRing:         hashRing,
 		credStore:        make(map[string]string),
 	}
 

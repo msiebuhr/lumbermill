@@ -66,7 +66,7 @@ func TestLumbermillDrain(t *testing.T) {
 		}
 	}()
 
-	lumbermill, testServer, destinations, waitGroup := setupLumbermillTestServer(influxHost, "user:pass")
+	lumbermill, testServer := setupLumbermillTestServer(influxHost, "user:pass")
 	shutdownChan := make(shutdownChan)
 
 	defer func() {
@@ -98,11 +98,8 @@ func TestLumbermillDrain(t *testing.T) {
 		// Shutdown by calling Close() on both shutdownChan and lumbermill
 		shutdownChan.Close()
 		lumbermill.Close()
-		for _, d := range destinations {
-			d.Close()
-		}
 	}()
 
-	awaitShutdown(shutdownChan, lumbermill, waitGroup)
+	awaitShutdown(shutdownChan, lumbermill)
 }
 */

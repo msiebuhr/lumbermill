@@ -303,24 +303,9 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
-		destination := s.hashRing.Get(id)
-
 		msg := lp.Bytes()
 		switch {
 		case bytes.Equal(header.Name, Heroku), bytes.HasPrefix(header.Name, TokenPrefix):
-			timeStr := string(lp.Header().Time)
-			t, e := time.Parse("2006-01-02T15:04:05.000000+00:00", timeStr)
-			if e != nil {
-				t, e = time.Parse("2006-01-02T15:04:05+00:00", timeStr)
-				if e != nil {
-					lumbermillErrorCounter.WithLabelValues("parsing").Inc()
-					log.Printf("Error Parsing Time(%s): %q\n", string(lp.Header().Time), e)
-					continue
-				}
-			}
-
-			timestamp := t.UnixNano() / int64(time.Microsecond)
-
 			pid := string(header.Procid)
 			switch pid {
 			case "router":
@@ -351,7 +336,6 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 						handleLogFmtParsingError(msg, err)
 						continue
 					}
-					destination.PostPoint(point{id, routerEvent, []interface{}{timestamp, re.Code}})
 
 					routerServiceError.WithLabelValues(app, rm.Dyno, handler, fmt.Sprint(re.Code)).Inc()
 
@@ -363,7 +347,6 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 				// likely a standard router log
 				default:
 					routerLinesCounter.Inc()
-					destination.PostPoint(point{id, routerRequest, []interface{}{timestamp, rm.Status, rm.Service}})
 
 					httpRequestDurationMicroseconds.WithLabelValues(app, rm.Dyno, handler, fmt.Sprint(rm.Status)).Observe(float64(rm.Service * 1000))
 					httpRequestsTotal.WithLabelValues(app, rm.Dyno, handler, fmt.Sprint(rm.Status)).Inc()
@@ -385,10 +368,6 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 						continue
 					}
 
-					what := string(lp.Header().Procid)
-					destination.PostPoint(
-						point{id, dynoEvents, []interface{}{timestamp, what, "R", de.Code, string(msg), dynoType(what)}},
-					)
 					dynoServiceError.WithLabelValues(app, string(lp.Header().Procid), fmt.Sprint(de.Code)).Inc()
 
 				// Dyno log-runtime-metrics memory messages
@@ -401,24 +380,6 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 						continue
 					}
 					if dm.Source != "" {
-						destination.PostPoint(
-							point{
-								id,
-								dynoMem,
-								[]interface{}{
-									timestamp,
-									dm.Source,
-									dm.MemoryCache,
-									dm.MemoryPgpgin,
-									dm.MemoryPgpgout,
-									dm.MemoryRSS,
-									dm.MemorySwap,
-									dm.MemoryTotal,
-									dynoType(dm.Source),
-								},
-							},
-						)
-
 						dynoRuntimeMemSize.WithLabelValues(app, dm.Source, "cache").Set(dm.MemoryCache)
 						dynoRuntimeMemSize.WithLabelValues(app, dm.Source, "rss").Set(dm.MemoryRSS)
 						dynoRuntimeMemSize.WithLabelValues(app, dm.Source, "swap").Set(dm.MemorySwap)
@@ -438,14 +399,6 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 					}
 
 					if dm.Source != "" {
-						destination.PostPoint(
-							point{
-								id,
-								dynoLoad,
-								[]interface{}{timestamp, dm.Source, dm.LoadAvg1Min, dm.LoadAvg5Min, dm.LoadAvg15Min, dynoType(dm.Source)},
-							},
-						)
-
 						dynoRuntimeLoad.WithLabelValues(app, dm.Source, "1m").Set(dm.LoadAvg1Min)
 						loadAvg1.WithLabelValues(app, dm.Source).Set(dm.LoadAvg1Min)
 						dynoRuntimeLoad.WithLabelValues(app, dm.Source, "5m").Set(dm.LoadAvg5Min)
