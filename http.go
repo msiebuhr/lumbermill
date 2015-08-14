@@ -19,11 +19,6 @@ type server struct {
 	shutdownChan     shutdownChan
 	isShuttingDown   bool
 	credStore        map[string]string
-
-	// scheduler based sampling lock for writing to recentTokens
-	tokenLock        *int32
-	recentTokensLock *sync.RWMutex
-	recentTokens     map[string]string
 }
 
 func newServer(httpServer *http.Server, ath auth.Authenticater, hashRing *hashRing) *server {
@@ -33,9 +28,6 @@ func newServer(httpServer *http.Server, ath auth.Authenticater, hashRing *hashRi
 		http:             httpServer,
 		hashRing:         hashRing,
 		credStore:        make(map[string]string),
-		tokenLock:        new(int32),
-		recentTokensLock: new(sync.RWMutex),
-		recentTokens:     make(map[string]string),
 	}
 
 	mux := http.NewServeMux()

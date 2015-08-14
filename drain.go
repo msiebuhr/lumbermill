@@ -9,7 +9,6 @@ import (
 	"os"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/bmizerany/lpx"
@@ -247,19 +246,6 @@ func dynoType(what string) string {
 	return s[0]
 }
 
-// Lock, or don't do any work, but don't block.
-// This, essentially, samples the incoming tokens for the purposes of health checking
-// live tokens. Rather than use a random number generator, or a global counter, we
-// let the scheduler do the sampling for us.
-func (s *server) maybeUpdateRecentTokens(host, id string) {
-	if atomic.CompareAndSwapInt32(s.tokenLock, 0, 1) {
-		s.recentTokensLock.Lock()
-		s.recentTokens[host] = id
-		s.recentTokensLock.Unlock()
-		atomic.StoreInt32(s.tokenLock, 0)
-	}
-}
-
 func handleLogFmtParsingError(msg []byte, err error) {
 	lumbermillErrorCounter.WithLabelValues("logfmt_parse").Inc()
 	log.Printf("logfmt unmarshal error(%q): %q\n", string(msg), err)
@@ -407,8 +393,6 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 
 				// Dyno log-runtime-metrics memory messages
 				case bytes.Contains(msg, dynoMemMsgSentinel):
-					s.maybeUpdateRecentTokens(destination.Name, id)
-
 					dynoMemLinesCounter.Inc()
 					dm := dynoMemMsg{}
 					err := logfmt.Unmarshal(msg, &dm)
@@ -445,8 +429,6 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 
 				// Dyno log-runtime-metrics load messages
 				case bytes.Contains(msg, dynoLoadMsgSentinel):
-					s.maybeUpdateRecentTokens(destination.Name, id)
-
 					dynoLoadLinesCounter.Inc()
 					dm := dynoLoadMsg{}
 					err := logfmt.Unmarshal(msg, &dm)
