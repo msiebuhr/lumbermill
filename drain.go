@@ -26,66 +26,16 @@ var (
 	Heroku = []byte("heroku")
 
 	// go-metrics Instruments
-	wrongMethodErrorCounter = prometheus.NewCounter(prometheus.CounterOpts{
+	lumbermillErrorCounter = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace:   "lumbermill",
 		Name:        "errors",
-		Help:        "x",
-		ConstLabels: prometheus.Labels{"error": "drain_wrong_method"},
-	})
-	noAppNameQuery = prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace:   "lumbermill",
-		Name:        "errors",
-		Help:        "x",
-		ConstLabels: prometheus.Labels{"error": "no_appname_query"},
-	})
-	authFailureCounter = prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace:   "lumbermill",
-		Name:        "errors",
-		Help:        "x",
-		ConstLabels: prometheus.Labels{"error": "auth_failure"},
-	})
-	badRequestCounter = prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace:   "lumbermill",
-		Name:        "errors",
-		Help:        "x",
-		ConstLabels: prometheus.Labels{"error": "badrequest"},
-	})
-	internalServerErrorCounter = prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace:   "lumbermill",
-		Name:        "errors",
-		Help:        "x",
-		ConstLabels: prometheus.Labels{"error": "internalserver"},
-	})
-	tokenMissingCounter = prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace:   "lumbermill",
-		Name:        "errors",
-		Help:        "x",
-		ConstLabels: prometheus.Labels{"error": "token_missing"},
-	})
-	timeParsingErrorCounter = prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace:   "lumbermill",
-		Name:        "errors",
-		Help:        "x",
-		ConstLabels: prometheus.Labels{"error": "time.parse"},
-	})
-	logfmtParsingErrorCounter = prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace:   "lumbermill",
-		Name:        "errors",
-		Help:        "x",
-		ConstLabels: prometheus.Labels{"error": "logfmt.parse"},
-	})
-	droppedErrorCounter = prometheus.NewCounter(prometheus.CounterOpts{
-		Namespace:   "lumbermill",
-		Name:        "errors",
-		Help:        "x",
-		ConstLabels: prometheus.Labels{"error": "dropped"},
-	})
+		Help:        "Lumbermill parsing errors",
+	}, []string{"error"})
 
 	batchCounter = prometheus.NewCounter(prometheus.CounterOpts{
 		Namespace: "lumbermill",
 		Name:      "batch",
 		Help:      "x",
-		//ConstLabels: prometheus.Labels{"error": "internalserver"},
 	})
 
 	linesCounter = prometheus.NewCounter(prometheus.CounterOpts{
@@ -228,15 +178,7 @@ var (
 )
 
 func init() {
-	prometheus.MustRegister(wrongMethodErrorCounter)
-	prometheus.MustRegister(noAppNameQuery)
-	prometheus.MustRegister(authFailureCounter)
-	prometheus.MustRegister(badRequestCounter)
-	prometheus.MustRegister(internalServerErrorCounter)
-	prometheus.MustRegister(tokenMissingCounter)
-	prometheus.MustRegister(timeParsingErrorCounter)
-	prometheus.MustRegister(logfmtParsingErrorCounter)
-	prometheus.MustRegister(droppedErrorCounter)
+	prometheus.MustRegister(lumbermillErrorCounter)
 
 	prometheus.MustRegister(batchCounter)
 
@@ -319,7 +261,7 @@ func (s *server) maybeUpdateRecentTokens(host, id string) {
 }
 
 func handleLogFmtParsingError(msg []byte, err error) {
-	logfmtParsingErrorCounter.Inc()
+	lumbermillErrorCounter.WithLabelValues("logfmt_parse").Inc()
 	log.Printf("logfmt unmarshal error(%q): %q\n", string(msg), err)
 }
 
@@ -332,7 +274,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method != "POST" {
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		wrongMethodErrorCounter.Inc()
+		lumbermillErrorCounter.WithLabelValues("drain_wrong_method").Inc();
 		return
 	}
 
@@ -350,7 +292,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 	if q.Get("app") == "" {
 		// Metric for invalid batches!
 		w.WriteHeader(http.StatusMethodNotAllowed)
-		noAppNameQuery.Inc()
+		lumbermillErrorCounter.WithLabelValues("no_appname_query").Inc()
 		return
 	}
 	app := q.Get("app")
@@ -371,7 +313,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 
 		// If we still don't have an id, throw an error and try the next line
 		if id == "" {
-			tokenMissingCounter.Inc()
+			lumbermillErrorCounter.WithLabelValues("token_missing").Inc()
 			continue
 		}
 
@@ -385,7 +327,7 @@ func (s *server) serveDrain(w http.ResponseWriter, r *http.Request) {
 			if e != nil {
 				t, e = time.Parse("2006-01-02T15:04:05+00:00", timeStr)
 				if e != nil {
-					timeParsingErrorCounter.Inc()
+					lumbermillErrorCounter.WithLabelValues("parsing").Inc()
 					log.Printf("Error Parsing Time(%s): %q\n", string(lp.Header().Time), e)
 					continue
 				}
